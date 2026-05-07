@@ -204,6 +204,10 @@ def parse_pdf(pdf_bytes: bytes):
         r'^(\d{2}-\d{2}-\d{2,4})\s+(\d{7})\s+(CREDIT|Sale|SEVICE|Debit)\b',
         re.IGNORECASE
     )
+    # Fallback: doc column is blank — line goes straight from doc number to quantity (a digit)
+    TX_BLANK = re.compile(
+        r'^(\d{2}-\d{2}-\d{2,4})\s+(\d{7})\s+[-\d]'
+    )
 
     # Known IGST full rates (inter-state)
     IGST_RATES = {0.1, 0.25, 1.5, 3.0, 5.0, 6.0, 9.0, 12.0, 18.0, 28.0}
@@ -221,13 +225,19 @@ def parse_pdf(pdf_bytes: bytes):
                     continue
 
                 m = TX.match(line)
-                if not m:
-                    continue
-
-                date_str  = m.group(1)
-                doc_no    = m.group(2)
-                dtype_raw = m.group(3).upper()
-                doc_type  = 'credit' if dtype_raw in ('CREDIT', 'DEBIT') else 'sale'
+                if m:
+                    date_str  = m.group(1)
+                    doc_no    = m.group(2)
+                    dtype_raw = m.group(3).upper()
+                    doc_type  = 'credit' if dtype_raw in ('CREDIT', 'DEBIT') else 'sale'
+                else:
+                    # Try blank-doc fallback: DATE  DOCNO  <digit/minus — no doc type word>
+                    mb = TX_BLANK.match(line)
+                    if not mb:
+                        continue
+                    date_str = mb.group(1)
+                    doc_no   = mb.group(2)
+                    doc_type = 'sale'   # blank doc treated as Sale Inv
 
                 try:
                     fmt = '%d-%m-%y' if len(date_str.split('-')[2]) == 2 else '%d-%m-%Y'
