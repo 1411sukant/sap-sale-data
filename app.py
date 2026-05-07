@@ -201,7 +201,7 @@ def parse_pdf(pdf_bytes: bytes):
     ]
 
     TX = re.compile(
-        r'^(\d{2}-\d{2}-\d{2,4})\s+(\d{7})\s+(CREDIT|Sale|Service|Debit)\b',
+        r'^(\d{2}-\d{2}-\d{2,4})\s+(\d{7})\s+(CREDIT|Sale|SEVICE|Debit)\b',
         re.IGNORECASE
     )
 
@@ -819,3 +819,4 @@ st.markdown(
     "</p>",
     unsafe_allow_html=True,
 )
+
